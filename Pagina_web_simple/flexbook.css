@@ -1,0 +1,58 @@
+body{
+  margin:0px;
+  padding:0px;
+}
+.container_row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+.container_col {
+  display: flex;
+  flex-direction: column;
+}
+.center {
+  justify-content:center;
+  align-items: center;
+}
+.center_text {
+  text-align: center;
+}
+.small_margin{
+  margin:5px;
+}
+header h3{
+  margin-left: 200px;
+}
+header nav{
+  margin-right: 200px;
+}
+#webdev {
+  padding-left: 200px;
+  padding-right: 200px;
+  padding-top: 50px;
+  padding-bottom: 80px;
+}
+.back_color1{
+  background-color: #1f1a45;
+}
+.back_color2{
+  background-color: rgb(180, 124, 39);
+}
+.text_white{
+  color:white;
+}
+.font_helvetica{
+  font-family:Helvetica;
+}
+div {
+  padding: 20px;
+}
+footer{
+  padding: 10px;
+}
+button{
+  background-color: rgb(180, 124, 39);
+  color: white;
+}
