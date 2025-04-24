@@ -3,12 +3,7 @@
  * 2025-04-23
  */
 
-import {
-  canvasWidth,
-  canvasHeight,
-  playerSpeed,
-  animationDelay,
-} from "./variables.js";
+import { variables } from "./variables.js";
 import { keyDirections, playerMovement } from "./objects.js";
 import { boxOverlap } from "./functions.js";
 
@@ -98,16 +93,6 @@ export class GameObject {
       ctx.fillStyle = this.color;
       ctx.fillRect(this.position.x, this.position.y, this.width, this.height);
     }
-
-    this.drawBoundingBox(ctx);
-  }
-
-  drawBoundingBox(ctx) {
-    // Draw the bounding box of the sprite
-    ctx.strokeStyle = "red";
-    ctx.beginPath();
-    ctx.rect(this.position.x, this.position.y, this.width, this.height);
-    ctx.stroke();
   }
 
   // Empty template for all GameObjects to be able to update
@@ -187,12 +172,12 @@ export class Player extends AnimatedObject {
   constrainToCanvas() {
     if (this.position.y < 0) {
       this.position.y = 0;
-    } else if (this.position.y + this.height > canvasHeight) {
-      this.position.y = canvasHeight - this.height;
+    } else if (this.position.y + this.height > variables.canvasHeight) {
+      this.position.y = variables.canvasHeight - this.height;
     } else if (this.position.x < 0) {
       this.position.x = 0;
-    } else if (this.position.x + this.width > canvasWidth) {
-      this.position.x = canvasWidth - this.width;
+    } else if (this.position.x + this.width > variables.canvasWidth) {
+      this.position.x = variables.canvasWidth - this.width;
     }
   }
 
@@ -202,7 +187,7 @@ export class Player extends AnimatedObject {
       const move = playerMovement[key];
       this.velocity[move.axis] += move.direction;
     }
-    this.velocity = this.velocity.normalize().times(playerSpeed);
+    this.velocity = this.velocity.normalize().times(variables.playerSpeed);
   }
 
   setMovementAnimation() {
@@ -260,7 +245,7 @@ export class Game {
 
   initObjects() {
     this.player = new Player(
-      new Vec(canvasWidth / 2, canvasHeight / 2),
+      new Vec(variables.canvasWidth / 2, variables.canvasHeight / 2),
       32,
       32,
       "red",
@@ -270,7 +255,7 @@ export class Game {
       "../assets/sprites/link_sprite_sheet.png",
       new Rect(0, 0, 120, 130)
     );
-    this.player.setAnimation(7, 7, false, animationDelay);
+    this.player.setAnimation(7, 7, false, variables.animationDelay);
 
     this.actors = [];
     this.coins = this.generateCoins(10); // Generate 10 random coins
@@ -279,11 +264,11 @@ export class Game {
   generateCoins(count) {
     const coins = [];
     for (let i = 0; i < count; i++) {
-      const randomX = Math.random() * (canvasWidth - 32); // Ensure coin fits within canvas
-      const randomY = Math.random() * (canvasHeight - 32);
+      const randomX = Math.random() * (variables.canvasWidth - 32); // Ensure coin fits within canvas
+      const randomY = Math.random() * (variables.canvasHeight - 32);
       const coin = new Coin(new Vec(randomX, randomY), 32, 32, "yellow", 8);
       coin.setSprite("../assets/sprites/coin_gold.png", new Rect(0, 0, 32, 32));
-      coin.setAnimation(0, 7, true, animationDelay);
+      coin.setAnimation(0, 7, true, variables.animationDelay);
       coins.push(coin);
     }
     return coins;

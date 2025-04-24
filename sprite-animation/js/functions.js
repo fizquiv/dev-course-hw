@@ -3,14 +3,31 @@
  * 2025-04-23
  */
 
-import {
-  getCtx,
-  getGame,
-  getOldTime,
-  setOldTime,
-  canvasWidth,
-  canvasHeight,
-} from "./variables.js";
+import { variables } from "./variables.js";
+
+export function getCtx() {
+  return variables.ctx;
+}
+
+export function setCtx(value) {
+  variables.ctx = value; // Modify the property of the object
+}
+
+export function getGame() {
+  return variables.game;
+}
+
+export function setGame(value) {
+  variables.game = value; // Modify the property of the object
+}
+
+export function getOldTime() {
+  return variables.oldTime;
+}
+
+export function setOldTime(value) {
+  variables.oldTime = value; // Modify the property of the object
+}
 
 export function boxOverlap(obj1, obj2) {
   return (
@@ -31,8 +48,14 @@ export function drawScene(newTime) {
   }
   const deltaTime = newTime - oldTime;
 
-  // Clear the canvas
-  ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+  // Draw the background image
+  ctx.drawImage(
+    variables.backgroundImage,
+    0,
+    0,
+    variables.canvasWidth,
+    variables.canvasHeight
+  );
 
   // Draw and update the game
   game.draw(ctx);

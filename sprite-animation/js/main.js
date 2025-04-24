@@ -2,15 +2,14 @@
  * Fausto Izquierdo
  * 2025-04-23
  */
-
-import { canvasWidth, canvasHeight, setCtx, setGame } from "./variables.js";
+import { variables } from "./variables.js";
+import { drawScene, setCtx, setGame } from "./functions.js";
 import { Game } from "./classes.js";
-import { drawScene } from "./functions.js";
 
 function main() {
   const canvas = document.getElementById("canvas");
-  canvas.width = canvasWidth;
-  canvas.height = canvasHeight;
+  canvas.width = variables.canvasWidth;
+  canvas.height = variables.canvasHeight;
 
   // Set the canvas context
   setCtx(canvas.getContext("2d"));
