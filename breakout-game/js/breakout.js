@@ -1,18 +1,21 @@
-/*  Fausto Izquierdo  */
+/*  Breakout – single-file version with power-ups (extra credit)  */
 
 const canvasWidth = 800;
 const canvasHeight = 600;
 
-const paddleVelocity = 0.6;
-const ballVelocity = 0.35;
+const paddleVelocity = 0.6; // px / ms
+const ballVelocity = 0.35; // px / ms
 const brickRows = 5;
 const brickCols = 8;
 const initialLives = 3;
+const maxLives = 5;
+const powerChance = 0.1; // 10 % drop chance
+const powerSpeed = 0.15; // px / ms
 
-let ctx;
-let game;
-let oldTime;
-let gameStarted = false;
+let ctx,
+  game,
+  oldTime,
+  gameStarted = false;
 
 const backgroundImage = new Image();
 backgroundImage.src = "../assets/background/background.jpg";
@@ -24,6 +27,7 @@ const music = new Audio("../assets/sfx/music.mp3");
 music.loop = true;
 const gameOverSFX = new Audio("../assets/sfx/game-over.mp3");
 const hitSFX = new Audio("../assets/sfx/ball-hit.wav");
+const powerSFX = new Audio("../assets/sfx/ball-hit.wav"); // reuse hit sound
 
 class Vec {
   constructor(x, y) {
@@ -38,9 +42,9 @@ class Vec {
   }
 }
 
-function playSound(s) {
-  s.currentTime = 0;
-  s.play();
+function playSound(a) {
+  a.currentTime = 0;
+  a.play();
 }
 
 function boxOverlap(a, b) {
@@ -76,9 +80,7 @@ class Paddle extends GameObject {
     if (this.keys.has("left")) this.velocity.x = -paddleVelocity;
     else if (this.keys.has("right")) this.velocity.x = paddleVelocity;
     else this.velocity.x = 0;
-
     this.position = this.position.plus(this.velocity.times(deltaTime));
-
     if (this.position.x < 0) this.position.x = 0;
     if (this.position.x + this.width > canvasWidth)
       this.position.x = canvasWidth - this.width;
@@ -97,22 +99,18 @@ class Ball extends GameObject {
       -ballVelocity
     );
   }
-
   update(deltaTime) {
     this.position = this.position.plus(this.velocity.times(deltaTime));
-
     if (this.position.x < 0) {
       this.position.x = 0;
       this.velocity.x = Math.abs(this.velocity.x);
       playSound(hitSFX);
     }
-
     if (this.position.x + this.width > canvasWidth) {
       this.position.x = canvasWidth - this.width;
       this.velocity.x = -Math.abs(this.velocity.x);
       playSound(hitSFX);
     }
-
     if (this.position.y < 0) {
       this.position.y = 0;
       this.velocity.y = Math.abs(this.velocity.y);
@@ -128,36 +126,43 @@ class Brick extends GameObject {
   }
 }
 
+class PowerUp extends GameObject {
+  constructor(position) {
+    super(position, 16, 16, "#ffcc00");
+  }
+  update(deltaTime) {
+    this.position.y += powerSpeed * deltaTime;
+  }
+}
+
 class Game {
-  constructor(brickColors) {
+  constructor(colors) {
     this.paddle = new Paddle();
     this.ball = new Ball();
     this.bricks = [];
+    this.powerUps = [];
     this.score = 0;
     this.lives = initialLives;
     this.over = false;
     this.win = false;
-    this.buildBricks(brickColors);
-    this.addInput();
+    this.addBricks(colors);
+    this.addListeners();
     music.currentTime = 0;
     music.play();
   }
-
-  buildBricks(colors) {
-    const margin = 5;
-    const bw = (canvasWidth - margin * (brickCols + 1)) / brickCols;
+  addBricks(colors) {
+    const m = 5;
+    const bw = (canvasWidth - m * (brickCols + 1)) / brickCols;
     const bh = 20;
-    let idx = 0;
-    for (let r = 0; r < brickRows; r++) {
+    let i = 0;
+    for (let r = 0; r < brickRows; r++)
       for (let c = 0; c < brickCols; c++) {
-        const x = margin + c * (bw + margin);
-        const y = 50 + r * (bh + margin);
-        this.bricks.push(new Brick(x, y, bw, bh, colors[idx++]));
+        const x = m + c * (bw + m);
+        const y = 50 + r * (bh + m);
+        this.bricks.push(new Brick(x, y, bw, bh, colors[i++]));
       }
-    }
   }
-
-  addInput() {
+  addListeners() {
     window.addEventListener("keydown", (e) => {
       if (e.key === "ArrowLeft") this.paddle.keys.add("left");
       if (e.key === "ArrowRight") this.paddle.keys.add("right");
@@ -167,10 +172,17 @@ class Game {
       if (e.key === "ArrowRight") this.paddle.keys.delete("right");
     });
   }
-
+  maybeDropPowerUp(brick) {
+    if (Math.random() < powerChance) {
+      const pos = new Vec(
+        brick.position.x + brick.width / 2 - 8,
+        brick.position.y
+      );
+      this.powerUps.push(new PowerUp(pos));
+    }
+  }
   update(deltaTime) {
     if (this.over) return;
-
     this.paddle.update(deltaTime);
     this.ball.update(deltaTime);
 
@@ -186,9 +198,21 @@ class Game {
         this.ball.velocity.y *= -1;
         this.score++;
         playSound(hitSFX);
+        this.maybeDropPowerUp(brick);
         if (this.score === brickRows * brickCols) this.winGame();
       }
     }
+
+    for (const p of this.powerUps) {
+      p.update(deltaTime);
+      if (boxOverlap(p, this.paddle)) {
+        if (this.lives < maxLives) this.lives++;
+        p.collected = true;
+        playSound(powerSFX);
+      }
+      if (p.position.y > canvasHeight) p.collected = true;
+    }
+    this.powerUps = this.powerUps.filter((p) => !p.collected);
 
     if (this.ball.position.y > canvasHeight) {
       this.lives--;
@@ -196,12 +220,11 @@ class Game {
       else this.endGame();
     }
   }
-
   draw(ctx) {
     if (backgroundImage.complete)
       ctx.drawImage(backgroundImage, 0, 0, canvasWidth, canvasHeight);
-
     this.bricks.forEach((b) => !b.destroyed && b.draw(ctx));
+    this.powerUps.forEach((p) => p.draw(ctx));
     this.paddle.draw(ctx);
     this.ball.draw(ctx);
 
@@ -209,7 +232,7 @@ class Game {
     ctx.font = "20px Arial";
     ctx.fillText(`Score: ${this.score}`, 20, 25);
 
-    for (let i = 0; i < this.lives; i++) {
+    for (let i = 0; i < this.lives; i++)
       ctx.drawImage(
         heartImage,
         canvasWidth - 30 * (i + 1),
@@ -217,7 +240,6 @@ class Game {
         25,
         25
       );
-    }
 
     if (this.over) {
       ctx.font = "40px Arial";
@@ -228,7 +250,6 @@ class Game {
       );
     }
   }
-
   endGame() {
     this.over = true;
     this.win = false;
@@ -236,7 +257,6 @@ class Game {
     gameOverSFX.play();
     document.getElementById("restart-button").style.display = "block";
   }
-
   winGame() {
     this.over = true;
     this.win = true;
@@ -249,34 +269,28 @@ let initialBrickColors = [];
 
 function drawInitialScene() {
   ctx.drawImage(backgroundImage, 0, 0, canvasWidth, canvasHeight);
-
-  const margin = 5;
-  const bw = (canvasWidth - margin * (brickCols + 1)) / brickCols;
+  const m = 5;
+  const bw = (canvasWidth - m * (brickCols + 1)) / brickCols;
   const bh = 20;
   initialBrickColors = [];
-
-  for (let r = 0; r < brickRows; r++) {
+  for (let r = 0; r < brickRows; r++)
     for (let c = 0; c < brickCols; c++) {
-      const x = margin + c * (bw + margin);
-      const y = 50 + r * (bh + margin);
-      const color = `hsl(${Math.random() * 360}, 70%, 60%)`;
+      const x = m + c * (bw + m);
+      const y = 50 + r * (bh + m);
+      const color = `hsl(${Math.random() * 360},70%,60%)`;
       initialBrickColors.push(color);
       ctx.fillStyle = color;
       ctx.fillRect(x, y, bw, bh);
     }
-  }
 }
 
 function drawScene(time) {
   if (!gameStarted) return;
-
   if (oldTime === undefined) oldTime = time;
   const deltaTime = time - oldTime;
-
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   game.update(deltaTime);
   game.draw(ctx);
-
   oldTime = time;
   requestAnimationFrame(drawScene);
 }
